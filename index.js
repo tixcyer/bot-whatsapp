@@ -5,13 +5,20 @@ const {
   downloadMediaMessage,
 } = require("@whiskeysockets/baileys");
 const { Boom } = require("@hapi/boom");
-const qrcode = require("qrcode-terminal");
 const pino = require("pino");
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
 const axios = require("axios");
 const fs = require("fs");
+const readline = require("readline");
 
 const DB_FILE = "./database.json";
+
+// Fungsi untuk membaca input nomor HP di terminal Railway
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
 function loadDB() {
   if (fs.existsSync(DB_FILE)) {
@@ -989,7 +996,6 @@ const bankSoal = {
   ],
 };
 
-// Objek untuk menyimpan referensi timer di memori (tidak disimpan ke file database.json)
 const activeTimers = {};
 
 async function connectToWhatsApp() {
@@ -1000,13 +1006,28 @@ async function connectToWhatsApp() {
     auth: state,
   });
 
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect, qr } = update;
+  // Jika belum terhubung, gunakan Pairing Code
+  if (!sock.authState.creds.registered) {
+    console.log("\n========================================");
+    let phoneNumber = await question("Masukkan Nomor WhatsApp Anda (Contoh: 628xxxxxxxxxx): ");
+    phoneNumber = phoneNumber.replace(/[^0-9]/g, "");
+    
+    // Beri jeda sebentar sebelum meminta code
+    setTimeout(async () => {
+      try {
+        let code = await sock.requestPairingCode(phoneNumber);
+        code = code?.match(/.{1,4}/g)?.join("-") || code;
+        console.log("\n----------------------------------------");
+        console.log(`> KODE PAIRING WHATSAPP ANDA: ${code}`);
+        console.log("----------------------------------------\n");
+      } catch (err) {
+        console.error("Gagal mendapatkan kode pairing:", err);
+      }
+    }, 3000);
+  }
 
-    if (qr) {
-      console.log("Scan QR Code di bawah ini menggunakan WhatsApp Anda:");
-      qrcode.generate(qr, { small: true });
-    }
+  sock.ev.on("connection.update", (update) => {
+    const { connection, lastDisconnect } = update;
 
     if (connection === "close") {
       const shouldReconnect =
@@ -1022,6 +1043,7 @@ async function connectToWhatsApp() {
       }
     } else if (connection === "open") {
       console.log("BERHASIL TERHUBUNG KE WHATSAPP!");
+      rl.close();
     }
   });
 
@@ -1470,7 +1492,6 @@ async function connectToWhatsApp() {
         }
       }, 120000);
 
-      // Simpan timer di memori terpisah (activeTimers) agar tidak ikut tersimpan ke JSON.stringify
       activeTimers[participant] = timer;
 
       db.gameSesi[participant] = {
@@ -1538,7 +1559,6 @@ async function connectToWhatsApp() {
         }
       }, 120000);
 
-      // Simpan timer di memori terpisah (activeTimers) agar tidak ikut tersimpan ke JSON.stringify
       activeTimers[participant] = timer;
 
       db.gameSesi[participant] = {
