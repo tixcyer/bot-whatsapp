@@ -14,7 +14,7 @@ const DB_FILE = "./database.json";
 
 // ==========================================
 // GANTI NOMOR DI BAWAH INI DENGAN NOMOR WHATSAPP ANDA
-const phoneNumber = "628xxxxxxxxxx"; 
+const phoneNumber = "6287828541775"; 
 // ==========================================
 
 function loadDB() {
