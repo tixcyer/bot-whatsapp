@@ -9,16 +9,13 @@ const pino = require("pino");
 const { Sticker, StickerTypes } = require("wa-sticker-formatter");
 const axios = require("axios");
 const fs = require("fs");
-const readline = require("readline");
 
 const DB_FILE = "./database.json";
 
-// Fungsi untuk membaca input nomor HP di terminal Railway
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-const question = (text) => new Promise((resolve) => rl.question(text, resolve));
+// ==========================================
+// GANTI NOMOR DI BAWAH INI DENGAN NOMOR WHATSAPP ANDA
+const phoneNumber = "628xxxxxxxxxx"; 
+// ==========================================
 
 function loadDB() {
   if (fs.existsSync(DB_FILE)) {
@@ -1006,16 +1003,11 @@ async function connectToWhatsApp() {
     auth: state,
   });
 
-  // Jika belum terhubung, gunakan Pairing Code
+  // Jika belum terhubung, otomatis meminta Pairing Code menggunakan nomor di atas
   if (!sock.authState.creds.registered) {
-    console.log("\n========================================");
-    let phoneNumber = await question("Masukkan Nomor WhatsApp Anda (Contoh: 628xxxxxxxxxx): ");
-    phoneNumber = phoneNumber.replace(/[^0-9]/g, "");
-    
-    // Beri jeda sebentar sebelum meminta code
     setTimeout(async () => {
       try {
-        let code = await sock.requestPairingCode(phoneNumber);
+        let code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ""));
         code = code?.match(/.{1,4}/g)?.join("-") || code;
         console.log("\n----------------------------------------");
         console.log(`> KODE PAIRING WHATSAPP ANDA: ${code}`);
@@ -1043,7 +1035,6 @@ async function connectToWhatsApp() {
       }
     } else if (connection === "open") {
       console.log("BERHASIL TERHUBUNG KE WHATSAPP!");
-      rl.close();
     }
   });
 
