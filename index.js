@@ -1007,21 +1007,7 @@ async function connectToWhatsApp() {
     auth: state,
   });
 
-  if (!sock.authState.creds.registered) {
-    setTimeout(async () => {
-      try {
-        let code = await sock.requestPairingCode(phoneNumber.replace(/[^0-9]/g, ""));
-        code = code?.match(/.{1,4}/g)?.join("-") || code;
-        console.log("\n----------------------------------------");
-        console.log(`> KODE PAIRING WHATSAPP ANDA: ${code}`);
-        console.log("----------------------------------------\n");
-      } catch (err) {
-        console.error("Gagal mendapatkan kode pairing:", err);
-      }
-    }, 3000);
-  }
-
-  sock.ev.on("connection.update", (update) => {
+  sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
 
     if (connection === "close") {
@@ -1038,6 +1024,23 @@ async function connectToWhatsApp() {
       }
     } else if (connection === "open") {
       console.log("BERHASIL TERHUBUNG KE WHATSAPP!");
+
+      // Request pairing code dipindah ke sini agar socket sudah benar-benar siap dan terbuka
+      if (!sock.authState.creds.registered) {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          
+          let code = await sock.requestPairingCode(
+            phoneNumber.replace(/[^0-9]/g, "")
+          );
+          code = code?.match(/.{1,4}/g)?.join("-") || code;
+          console.log("\n----------------------------------------");
+          console.log(`> KODE PAIRING WHATSAPP ANDA: ${code}`);
+          console.log("----------------------------------------\n");
+        } catch (err) {
+          console.error("Gagal mendapatkan kode pairing:", err);
+        }
+      }
     }
   });
 
