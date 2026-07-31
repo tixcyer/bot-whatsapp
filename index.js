@@ -19,7 +19,11 @@ const phoneNumber = "6287828541775";
 
 function loadDB() {
   if (fs.existsSync(DB_FILE)) {
-    return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+    try {
+      return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+    } catch (e) {
+      // Fallback jika file corrupt
+    }
   }
   return {
     absensi: [],
@@ -1003,7 +1007,6 @@ async function connectToWhatsApp() {
     auth: state,
   });
 
-  // Jika belum terhubung, otomatis meminta Pairing Code menggunakan nomor di atas
   if (!sock.authState.creds.registered) {
     setTimeout(async () => {
       try {
